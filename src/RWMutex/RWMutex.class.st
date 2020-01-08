@@ -1,5 +1,5 @@
 "
-I am like Mutex that protects write access to a shared resource while granting read access to multiple requestors. Read and write access is mutually exclusive. That is, a write request will block new read requests and wait on existing read-critical processes to finish. Concurrent read requests will be granted if no write request is made or while there's already a write-citical process going.
+I am like Mutex that protects write access to a shared resource while granting read access to multiple requestors. Read and write access is mutually exclusive. That is, a write request will block new read requests and wait on existing read-critical processes to finish. Concurrent read requests will be granted until write access is requested.
 "
 Class {
 	#name : #RWMutex,
