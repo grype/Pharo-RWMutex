@@ -5,27 +5,27 @@ Class {
 }
 
 { #category : #tests }
-RWMutexTests >> testReadCritical [
+RWMutexTests >> testCriticalRead [
 	| mutex readCount |
 
 	mutex := RWMutex new.
 	readCount := 0.
-	[ mutex readCritical: [ readCount := readCount + 1 ] ] fork.
+	[ mutex criticalRead: [ readCount := readCount + 1 ] ] fork.
 	[ mutex
-		readCritical: [ self
+		criticalRead: [ self
 				assert: readCount = 1
 				description: 'read-critical block should have changed the value' ] ]
 		fork
 ]
 
 { #category : #tests }
-RWMutexTests >> testReadCritical2 [
+RWMutexTests >> testCriticalRead2 [
 	| mutex readCount |
 
 	mutex := RWMutex new.
 	readCount := 0.
-	[ mutex readCritical: [ readCount := readCount + 2 ] ] fork.
-	[ mutex readCritical: [ readCount := readCount + 1 ] ]
+	[ mutex criticalRead: [ readCount := readCount + 2 ] ] fork.
+	[ mutex criticalRead: [ readCount := readCount + 1 ] ]
 		forkAt: Processor activePriority - 1.
 	[ self
 		assert: readCount = 2
@@ -38,6 +38,22 @@ RWMutexTests >> testReadCritical2 [
 ]
 
 { #category : #tests }
+RWMutexTests >> testCriticalWrite [
+	| mutex writeCount |
+
+	mutex := RWMutex new.
+	writeCount := 0.
+	[ mutex
+		criticalWrite: [ (Delay forMilliseconds: 1) wait.
+			writeCount := writeCount + 1 ] ] fork.
+	[ mutex
+		criticalWrite: [ self
+				assert: writeCount = 1
+				description: 'read-critical block should have changed the value' ] ]
+		fork
+]
+
+{ #category : #tests }
 RWMutexTests >> testReadRead [
 	| mutex readCount |
 
@@ -47,7 +63,7 @@ RWMutexTests >> testReadRead [
 	
 	"1. Start delayed read"
 	[ mutex
-		readCritical: [ (Delay forMilliseconds: 1) wait.
+		criticalRead: [ (Delay forMilliseconds: 1) wait.
 			self
 				assert: readCount = 2
 				description: 'Second read should happen before the first delayed read'.
@@ -55,7 +71,7 @@ RWMutexTests >> testReadRead [
 
 	"2. Start second read"
 	[ mutex
-		readCritical: [ self assert: readCount = 0 description: 'Unexpected read happened'.
+		criticalRead: [ self assert: readCount = 0 description: 'Unexpected read happened'.
 			readCount := readCount + 2 ] ] fork.
 
 	self
@@ -76,12 +92,12 @@ RWMutexTests >> testReadWrite [
 	writeCount := 0.
 	"Start delayed read process"
 	[ mutex
-		readCritical: [ (Delay forMilliseconds: 1) wait.
+		criticalRead: [ (Delay forMilliseconds: 1) wait.
 			readCount := readCount + 1 ] ] fork.
 
 	"Write should wait for initial read to complete"
 	[ mutex
-		writeCritical: [ self
+		criticalWrite: [ self
 				assert: readCount = 1
 				description: 'There should have been a read before a write'.
 			writeCount := writeCount + 1 ] ] fork.
@@ -107,20 +123,20 @@ RWMutexTests >> testReadWriteRead [
 
 	"1. Start delayed read process"
 	[ mutex
-		readCritical: [ 
+		criticalRead: [ 
 			(Delay forMilliseconds: 10) wait.
 			readCount := readCount + 2 ] ] fork.
 
 	"2. Write should wait for initial read to complete"
 	[ mutex
-		writeCritical: [ 
+		criticalWrite: [ 
 			self
 				assert: readCount = 2
 				description: 'Read count should have changed once before write'.
 			writeCount := writeCount + 1 ] ] fork.
 
 	"3. Next read should wait for write to complete"
-	[ mutex readCritical: [ 
+	[ mutex criticalRead: [ 
 		self assert: writeCount = 1 description: 'Write count should have increased'.
 		readCount := readCount + 1 ] ] fork.
 
@@ -137,22 +153,6 @@ RWMutexTests >> testReadWriteRead [
 ]
 
 { #category : #tests }
-RWMutexTests >> testWriteCritical [
-	| mutex writeCount |
-
-	mutex := RWMutex new.
-	writeCount := 0.
-	[ mutex
-		writeCritical: [ (Delay forMilliseconds: 1) wait.
-			writeCount := writeCount + 1 ] ] fork.
-	[ mutex
-		writeCritical: [ self
-				assert: writeCount = 1
-				description: 'read-critical block should have changed the value' ] ]
-		fork
-]
-
-{ #category : #tests }
 RWMutexTests >> testWriteRead [
 	| mutex writeCount readCount |
 
@@ -162,11 +162,11 @@ RWMutexTests >> testWriteRead [
 
 	"1. Start delayed write"
 	[ mutex
-		writeCritical: [ (Delay forMilliseconds: 10) wait.
+		criticalWrite: [ (Delay forMilliseconds: 10) wait.
 			writeCount := writeCount + 1 ] ] fork.
 
 	[ mutex
-		readCritical: [ self
+		criticalRead: [ self
 				assert: writeCount = 1
 				description: 'Performed read before write finished'.
 			readCount := readCount + 1 ] ] fork.
@@ -187,7 +187,7 @@ RWMutexTests >> testWriteWrite [
 	mutex := RWMutex new.
 	writeCount := 0.
 	[ mutex
-		writeCritical: [ (Delay forMilliseconds: 1) wait.
+		criticalWrite: [ (Delay forMilliseconds: 1) wait.
 			self
 				assert: writeCount = 0
 				description:
@@ -195,7 +195,7 @@ RWMutexTests >> testWriteWrite [
 			writeCount := writeCount + 1 ] ] fork.
 
 	[ mutex
-		writeCritical: [ self
+		criticalWrite: [ self
 				assert: writeCount = 1
 				description: 'Second write did not wait for first write to finish'.
 			writeCount := writeCount + 1 ] ] fork.

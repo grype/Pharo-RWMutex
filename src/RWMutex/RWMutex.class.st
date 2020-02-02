@@ -22,18 +22,8 @@ RWMutex class >> initialize [
 	MaxReaders := 1 << 30
 ]
 
-{ #category : #initialization }
-RWMutex >> initialize [
-	super initialize.
-	readCount := 0.
-	readWait := 0.
-	readSemaphore := Semaphore new.
-	writeSemaphore := Semaphore new.
-	mutex := Mutex new
-]
-
 { #category : #'mutual exclusion' }
-RWMutex >> readCritical: aBlock [
+RWMutex >> criticalRead: aBlock [
 	| result r |
 
 	"writer is pending"
@@ -48,7 +38,7 @@ RWMutex >> readCritical: aBlock [
 ]
 
 { #category : #'mutual exclusion' }
-RWMutex >> writeCritical: aBlock [
+RWMutex >> criticalWrite: aBlock [
 	| r |
 
 	^ mutex
@@ -62,4 +52,14 @@ RWMutex >> writeCritical: aBlock [
 			aBlock value.
 			r := [ readCount := readCount + MaxReaders ] valueUnpreemptively.
 			1 to: r do: [ :i | readSemaphore signal ] ]
+]
+
+{ #category : #initialization }
+RWMutex >> initialize [
+	super initialize.
+	readCount := 0.
+	readWait := 0.
+	readSemaphore := Semaphore new.
+	writeSemaphore := Semaphore new.
+	mutex := Mutex new
 ]
