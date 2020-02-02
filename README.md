@@ -20,7 +20,7 @@ The first forked process will lock write access. The second forked process will 
 
 ```smalltalk
 Metacello new
-  repository: 'github://grype/RWMutex/src';
+  repository: 'github://grype/Pharo-RWMutex';
   baseline: 'RWMutex';
   load.
 ```
